@@ -129,6 +129,23 @@ Keep one synthetic character recognisably the same across many images and short 
 
 **Invoke with:** `/ai-character-imaging` or Claude invokes automatically for consistent-character generation
 
+### Decision Docket
+
+Keep one standing page of every decision Claude needs from you, instead of questions buried in chat replies. Each card can be answered cold: what happened, why it's your call, the options with their cost and gain, Claude's recommendation, and what happens if you do nothing. You pick an option and record it on the page; on its next check-in Claude reads the answer, acts on it, logs the ruling and removes the card, so the page only ever shows what is still waiting on you.
+
+**When to use:**
+- Long-running or autonomous work where Claude keeps going while you're elsewhere
+- You move between many threads and lose questions asked inline
+- Sorting a list of items (keep, hide, cut) or auditing calls Claude made without you
+
+**What it covers:**
+- A ready-made docket page (an Artifact with a small database): a sticky index, one card per decision, light and dark themes, a phone layout, drafts kept while you type
+- The question format and how to write a card someone can decide from with no other context
+- The check-in loop: read answers, act, log the ruling, delete the card pinned to its version
+- FYI "calls" cards, item lists with their own choices, owner-only or team write access
+
+**Invoke with:** `/decision-docket` or Claude invokes automatically when it has a decision to put to you during long-running work
+
 ## How It Works
 
 Skills are stored in `skills/<skill-name>/SKILL.md` format. Each skill:

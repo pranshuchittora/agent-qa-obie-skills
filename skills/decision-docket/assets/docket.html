@@ -1,0 +1,433 @@
+<title>Decision Docket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<style>
+/* Layout: a docket. Sticky index of decisions on the left (status at a glance), one ruled card per decision on the right. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #18202b;
+  --muted: #5b6676;
+  --rule: #dde1e7;
+  --accent: #0e6b66;
+  --accent-soft: #e2f1ef;
+  --due: #a35a00;
+  --due-soft: #fbefdc;
+  --ok: #2c6e2f;
+  --ok-soft: #e4f2e2;
+  --cut: #a3322a;
+  --cut-soft: #f9e6e4;
+  --warn-soft: #fdf3e3;
+  --display: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --surface: #181e26; --ink: #e6eaf0; --muted: #9aa5b4; --rule: #2a323d;
+    --accent: #4fc2b8; --accent-soft: #15302e; --due: #f0a347; --due-soft: #33250f;
+    --ok: #79c47c; --ok-soft: #18301a; --cut: #f08a80; --cut-soft: #3a1c1a; --warn-soft: #2c2312; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #181e26; --ink: #e6eaf0; --muted: #9aa5b4; --rule: #2a323d;
+  --accent: #4fc2b8; --accent-soft: #15302e; --due: #f0a347; --due-soft: #33250f;
+  --ok: #79c47c; --ok-soft: #18301a; --cut: #f08a80; --cut-soft: #3a1c1a; --warn-soft: #2c2312; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 22px; }
+header.top h1 { font: 800 28px/1.15 var(--display); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+header.top .meta { color: var(--muted); font-size: 13px; }
+.intro { max-width: 68ch; color: var(--muted); margin: 0 0 22px; }
+.banner { border: 1px solid var(--rule); background: var(--warn-soft); padding: 10px 14px; border-radius: 6px; margin: 0 0 18px; font-size: 14px; }
+.grid { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } nav.index { position: static !important; max-height: none !important; } }
+nav.index { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 6px; max-height: calc(100vh - 32px); overflow-y: auto; }
+nav.index .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+nav.index a { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 2px 8px; text-decoration: none; color: var(--ink); padding: 8px 10px; border-radius: 6px; border: 1px solid transparent; }
+nav.index a:hover, nav.index a:focus-visible { border-color: var(--rule); background: var(--surface); outline: none; }
+nav.index .n { font: 600 12px/1.6 var(--mono); color: var(--muted); }
+nav.index .t { font-weight: 600; font-size: 14px; line-height: 1.3; }
+nav.index .s { grid-column: 2; font-size: 12px; }
+.pill { display: inline-block; font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 999px; letter-spacing: 0.02em; white-space: nowrap; }
+.pill.pending { background: var(--due-soft); color: var(--due); }
+.pill.done { background: var(--ok-soft); color: var(--ok); }
+.pill.due { background: var(--due-soft); color: var(--due); }
+.pill.calm { background: var(--accent-soft); color: var(--accent); }
+main { display: grid; gap: 26px; min-width: 0; }
+section.decision { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 22px 24px 20px; min-width: 0; scroll-margin-top: 16px; }
+@media (max-width: 520px) { section.decision { padding: 18px 16px; } }
+.dhead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; }
+.dhead .num { font: 600 13px var(--mono); color: var(--muted); }
+.dhead .area { font: 600 11px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+section.decision h2 { font: 700 21px/1.25 var(--display); margin: 2px 0 10px; text-wrap: balance; }
+h3 { font: 700 12px/1.3 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 20px 0 8px; }
+p { margin: 0 0 10px; max-width: 72ch; }
+ul.facts { margin: 0 0 8px; padding-left: 18px; max-width: 74ch; }
+ul.facts li { margin: 3px 0; }
+.tablewrap { overflow-x: auto; margin: 4px 0 8px; }
+table { border-collapse: collapse; font-size: 13.5px; min-width: 420px; }
+th, td { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; }
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; padding-left: 12px; }
+.opts { display: grid; gap: 10px; }
+label.opt { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 4px 10px; border: 1px solid var(--rule); border-radius: 7px; padding: 12px 14px; cursor: pointer; background: var(--surface); }
+label.opt:hover { border-color: var(--muted); }
+label.opt:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+label.opt input { margin: 3px 0 0; accent-color: var(--accent); width: 16px; height: 16px; }
+label.opt input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt .ot { font-weight: 650; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.opt .od { grid-column: 2; color: var(--muted); font-size: 14px; }
+.opt .od b { color: var(--ink); font-weight: 600; }
+.rec { font: 700 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); border: 1px solid var(--accent); padding: 3px 6px; border-radius: 4px; }
+.why { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 14px 0 6px; max-width: 78ch; }
+.why b { font-weight: 700; }
+.idle { font-size: 14px; color: var(--muted); }
+.idle b { color: var(--ink); }
+.record { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--rule); }
+.record textarea { width: 100%; min-height: 54px; resize: vertical; font: 14px/1.45 var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; }
+.record textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rrow { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+button.save { font: 600 14px var(--body); background: var(--accent); color: var(--surface); border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; }
+button.save.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button.save:disabled { opacity: 0.45; cursor: not-allowed; }
+button.save:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.status { font-size: 13px; color: var(--muted); }
+.status.ok { color: var(--ok); }
+.status.err { color: var(--due); }
+.recorded { border-left: 3px solid var(--ok); background: var(--ok-soft); padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0 6px; }
+.recorded .line { font-weight: 600; }
+.recorded .note { color: var(--muted); white-space: pre-wrap; font-size: 14px; }
+.items { display: grid; gap: 8px; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; align-items: start; border: 1px solid var(--rule); border-radius: 7px; padding: 10px 12px; }
+@media (max-width: 640px) { .item { grid-template-columns: minmax(0, 1fr); } }
+.item .il { font-weight: 650; }
+.item .iw { color: var(--muted); font-size: 14px; }
+.item .im { font-size: 13px; color: var(--muted); }
+.item .im b { color: var(--ink); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; align-self: center; position: relative; }
+.seg label { font: 600 12px/1 var(--mono); padding: 7px 10px; cursor: pointer; color: var(--muted); border-left: 1px solid var(--rule); display: inline-flex; gap: 6px; align-items: center; position: relative; }
+.seg label:first-child { border-left: 0; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--accent-soft); color: var(--accent); }
+.seg label.cut:has(input:checked) { background: var(--cut-soft); color: var(--cut); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+code { font: 13px var(--mono); background: var(--bg); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--rule); overflow-wrap: anywhere; }
+a { color: var(--accent); overflow-wrap: anywhere; }
+.empty { border: 1px dashed var(--rule); border-radius: 8px; padding: 22px 24px; color: var(--muted); background: var(--surface); }
+footer { color: var(--muted); font-size: 13px; margin-top: 26px; max-width: 74ch; }
+@media (prefers-reduced-motion: no-preference) { label.opt, nav.index a, .seg label { transition: border-color .12s, background-color .12s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1 id="docketTitle">Decision Docket</h1>
+    <div class="meta" id="meta"></div>
+  </header>
+  <p class="intro">Every decision Claude needs from you, most urgent first. Each card says what happened, the options with their cost and gain, Claude's recommendation, and what happens if you do nothing. Pick an option on each card and press <b>Record decision</b>. Claude reads your decisions back, acts on them, and then removes the card.</p>
+  <div class="banner" id="banner" hidden></div>
+  <div class="grid">
+    <nav class="index" aria-label="Decisions">
+      <p class="label">Decisions</p>
+      <div id="indexList"></div>
+    </nav>
+    <main id="main">
+      <div class="empty" id="empty">Loading the docket…</div>
+    </main>
+  </div>
+  <footer id="footer"></footer>
+</div>
+
+<script>
+(function () {
+  // ---- Fill these in when you publish the page (decision-docket skill, step 1) ----
+  const DOCKET = {
+    title: "Decision Docket",            // e.g. "Ana's Decision Docket"
+    owner: "the owner",                  // who records decisions, e.g. "Ana", or "the billing team" for a team docket
+    project: "",                         // shown under the title, e.g. "Billing migration"
+    footer: "Decisions are stored with this page. Claude reads them back on its next check-in, acts on them, and removes each card once it has.",
+    draftKey: "decision-docket-drafts"   // localStorage key for unsent drafts; make it unique per docket
+  };
+  // ----------------------------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const cards = new Map(); // id -> {json, el, q}
+  let db = null;
+  let userNs = null;
+  let canWrite = true;
+  const DRAFT_KEY = DOCKET.draftKey;
+  function loadDrafts() { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch (e) { return {}; } }
+  function saveDrafts(d) { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) {} }
+  const drafts = loadDrafts();
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  // Inline text: `code`, **bold**, and bare https links; everything enters through textContent.
+  function inline(parent, text) {
+    String(text == null ? "" : text).split(/(`[^`]+`)/g).forEach((part) => {
+      if (!part) return;
+      if (part.length > 1 && part[0] === "`" && part[part.length - 1] === "`") { parent.appendChild(el("code", null, part.slice(1, -1))); return; }
+      part.split(/(\*\*[^*]+\*\*)/g).forEach((seg) => {
+        if (!seg) return;
+        if (seg.startsWith("**") && seg.endsWith("**") && seg.length > 4) { parent.appendChild(el("b", null, seg.slice(2, -2))); return; }
+        seg.split(/(https:\/\/[^\s)]+)/g).forEach((b) => {
+          if (!b) return;
+          if (/^https:\/\//.test(b)) { const a = el("a", null, b); a.href = b; a.target = "_blank"; a.rel = "noopener"; parent.appendChild(a); }
+          else parent.appendChild(document.createTextNode(b));
+        });
+      });
+    });
+  }
+
+  function table(t) {
+    const wrap = el("div", "tablewrap"); const tb = el("table");
+    const num = new Set(t.num || []);
+    if (Array.isArray(t.head)) { const tr = el("tr"); t.head.forEach((h, i) => { const th = el("th", num.has(i) ? "num" : null); inline(th, h); tr.appendChild(th); }); const th = el("thead"); th.appendChild(tr); tb.appendChild(th); }
+    const body = el("tbody");
+    (t.rows || []).forEach((r) => { const tr = el("tr"); r.forEach((c, i) => { const td = el("td", num.has(i) ? "num" : null); inline(td, c); tr.appendChild(td); }); body.appendChild(tr); });
+    tb.appendChild(body); wrap.appendChild(tb); return wrap;
+  }
+
+  function context(parent, paras) {
+    let ul = null;
+    (paras || []).forEach((p) => {
+      if (p && typeof p === "object" && p.table) { ul = null; parent.appendChild(table(p.table)); return; }
+      if (typeof p !== "string") return;
+      if (p.startsWith("### ")) { ul = null; parent.appendChild(el("h3", null, p.slice(4))); return; }
+      if (p.startsWith("- ")) { if (!ul) { ul = el("ul", "facts"); parent.appendChild(ul); } const li = el("li"); inline(li, p.slice(2)); ul.appendChild(li); return; }
+      ul = null; const e = el("p"); inline(e, p); parent.appendChild(e);
+    });
+  }
+
+  function dueText(q) {
+    if (q.due) return q.due;
+    if (q.priority === "now") return "Blocks work";
+    if (q.priority === "security") return "Security";
+    if (q.priority === "review") return "Your review · asked " + (q.asked || "");
+    return "No deadline · asked " + (q.asked || "");
+  }
+  function dueClass(q) { return q.priority === "later" || q.priority === "review" ? "calm" : "due"; }
+
+  function head(n, q, answered) {
+    const h = el("div", "dhead");
+    h.appendChild(el("span", "num", String(n)));
+    h.appendChild(el("span", "pill " + dueClass(q), dueText(q)));
+    h.appendChild(el("span", "pill " + (answered ? "done" : "pending"), answered ? "Recorded · Claude acts next" : "Pending"));
+    if (q.area) h.appendChild(el("span", "area", q.area));
+    return h;
+  }
+
+  function optionDetail(o) {
+    const d = el("span", "od");
+    if (o.detail) inline(d, o.detail);
+    if (o.cost) { if (o.detail) d.appendChild(document.createTextNode(" ")); d.appendChild(el("b", null, "Cost:")); d.appendChild(document.createTextNode(" ")); inline(d, o.cost); }
+    if (o.gain) { d.appendChild(document.createTextNode(" ")); d.appendChild(el("b", null, "Gain:")); d.appendChild(document.createTextNode(" ")); inline(d, o.gain); }
+    return d;
+  }
+
+  function openCard(id, q, n) {
+    const sec = el("section", "decision"); sec.id = "d-" + id;
+    sec.appendChild(head(n, q, false));
+    sec.appendChild(el("h2", null, q.title || "(untitled decision)"));
+    context(sec, q.context);
+    const draft = drafts[id] || {};
+    const opts = Array.isArray(q.options) ? q.options : [];
+    const items = Array.isArray(q.items) ? q.items : [];
+    const calls = Array.isArray(q.calls) ? q.calls : [];
+    const choices = itemChoices(q);
+
+    if (calls.length) {
+      sec.appendChild(el("h3", null, "The calls"));
+      sec.appendChild(table({ head: ["Call", "What I did and why"], rows: calls.map((c) => [c.call, c.what]) }));
+    }
+    if (items.length) {
+      sec.appendChild(el("h3", null, "Items, each set to Claude's recommendation"));
+      const box = el("div", "items");
+      items.forEach((it) => {
+        const row = el("div", "item");
+        const left = el("div");
+        const l = el("div", "il"); inline(l, it.label); left.appendChild(l);
+        if (it.what) { const w = el("div", "iw"); inline(w, it.what); left.appendChild(w); }
+        if (it.source || it.recommend) {
+          const m = el("div", "im");
+          if (it.source) { m.appendChild(el("b", null, "Source: ")); inline(m, it.source); }
+          if (it.source && it.recommend) m.appendChild(document.createTextNode(" · "));
+          if (it.recommend) { m.appendChild(el("b", null, "Claude: ")); inline(m, it.recommend); }
+          left.appendChild(m);
+        }
+        row.appendChild(left);
+        const seg = el("div", "seg"); seg.setAttribute("role", "radiogroup"); seg.setAttribute("aria-label", "Decision for " + it.label);
+        const picked = (draft.items || {})[it.key] || it.default || choices[0].key;
+        choices.forEach(({ key: v, label: t, tone }) => {
+          const lab = el("label", tone === "danger" ? "cut" : null);
+          const r = el("input"); r.type = "radio"; r.name = "item-" + id + "-" + it.key; r.value = v; r.id = "item-" + id + "-" + it.key + "-" + v; r.dataset.item = it.key;
+          if (picked === v) r.checked = true;
+          lab.appendChild(r); lab.appendChild(document.createTextNode(t)); seg.appendChild(lab);
+        });
+        row.appendChild(seg); box.appendChild(row);
+      });
+      sec.appendChild(box);
+    }
+    if (opts.length) {
+      sec.appendChild(el("h3", null, calls.length ? "Your call" : "Options"));
+      const box = el("div", "opts");
+      opts.forEach((o, i) => {
+        const lab = el("label", "opt");
+        const r = el("input"); r.type = "radio"; r.name = "choice-" + id; r.value = o.key; r.id = "opt-" + id + "-" + i;
+        if (draft.choice === o.key) r.checked = true;
+        const ot = el("span", "ot"); inline(ot, o.label);
+        if (o.recommended) ot.appendChild(el("span", "rec", typeof o.recommended === "string" ? o.recommended : "Recommended"));
+        lab.appendChild(r); lab.appendChild(ot); lab.appendChild(optionDetail(o)); box.appendChild(lab);
+      });
+      sec.appendChild(box);
+    }
+    if (q.recommendation) { const w = el("div", "why"); w.appendChild(el("b", null, "My recommendation: ")); inline(w, q.recommendation); sec.appendChild(w); }
+    if (q.ifNothing) { const p = el("p", "idle"); p.appendChild(el("b", null, "If you do nothing: ")); inline(p, q.ifNothing); sec.appendChild(p); }
+
+    const rec = el("div", "record");
+    const nl = el("label", "status", (opts.length || items.length) ? "Note (optional): conditions, changes, or anything I should know" : "Your answer"); nl.htmlFor = "note-" + id;
+    const ta = el("textarea"); ta.id = "note-" + id; ta.value = draft.note || "";
+    const row = el("div", "rrow");
+    const save = el("button", "save", "Record decision"); save.type = "button"; save.id = "save-" + id;
+    const st = el("span", "status"); st.setAttribute("aria-live", "polite");
+    row.appendChild(save); row.appendChild(st);
+    rec.appendChild(nl); rec.appendChild(ta); rec.appendChild(row); sec.appendChild(rec);
+
+    function current() {
+      const picked = sec.querySelector('input[type=radio][name="choice-' + id + '"]:checked');
+      const its = {}; sec.querySelectorAll("input[type=radio][data-item]:checked").forEach((r) => { its[r.dataset.item] = r.value; });
+      return { choice: picked ? picked.value : null, note: ta.value.trim(), items: its };
+    }
+    function refresh() {
+      const c = current();
+      const ready = opts.length ? !!c.choice : items.length ? true : c.note.length > 0;
+      save.disabled = !ready || !db || !canWrite;
+      st.className = "status";
+      st.textContent = !db ? "Decisions can't be saved in this view." : !canWrite ? "Only " + DOCKET.owner + " can record decisions here." : ready ? "" : (opts.length ? "Pick an option to record." : "Type an answer to record.");
+    }
+    sec.addEventListener("change", () => { drafts[id] = current(); saveDrafts(drafts); refresh(); });
+    ta.addEventListener("input", () => { drafts[id] = current(); saveDrafts(drafts); refresh(); });
+    save.addEventListener("click", async () => {
+      const c = current(); const chosen = opts.find((o) => o.key === c.choice);
+      save.disabled = true; st.className = "status"; st.textContent = "Recording…";
+      const answer = { note: c.note, at: new Date().toISOString() };
+      if (opts.length) { answer.choice = c.choice; answer.label = chosen ? chosen.label : null; }
+      if (items.length) answer.items = c.items;
+      try { const by = userNs && typeof userNs.id === "function" ? await userNs.id() : null; if (by) answer.by = by; } catch (e) {}
+      try {
+        await db.doc("questions/" + id).update({ status: "answered", answer: answer });
+        delete drafts[id]; saveDrafts(drafts);
+      } catch (e) {
+        if (e && e.code === "invalid_argument") canWrite = false;
+        refresh(); st.className = "status err";
+        st.textContent = e && e.code === "invalid_argument" ? "Not recorded: only " + DOCKET.owner + " can record decisions here." : "Not recorded. Try again in a moment.";
+      }
+    });
+    refresh();
+    return sec;
+  }
+
+  function itemChoices(q) {
+    const c = Array.isArray(q.itemChoices) ? q.itemChoices.filter((x) => x && x.key && x.label) : [];
+    return c.length ? c : [{ key: "keep", label: "Keep" }, { key: "hide", label: "Hide" }, { key: "cut", label: "Cut", tone: "danger" }];
+  }
+
+  function answeredCard(id, q, n) {
+    const sec = el("section", "decision"); sec.id = "d-" + id;
+    sec.appendChild(head(n, q, true));
+    sec.appendChild(el("h2", null, q.title || "(untitled decision)"));
+    const a = q.answer || {};
+    const box = el("div", "recorded");
+    if (a.items && Array.isArray(q.items)) {
+      const choices = itemChoices(q); const first = choices[0].key;
+      const counts = {}; choices.forEach((c) => { counts[c.key] = 0; }); const changed = [];
+      const labelOf = (k) => (choices.find((c) => c.key === k) || { label: k }).label;
+      q.items.forEach((it) => { const v = a.items[it.key] || it.default || first; counts[v] = (counts[v] || 0) + 1; if (v !== (it.default || first)) changed.push(labelOf(v) + ": " + it.label); });
+      box.appendChild(el("div", "line", choices.map((c) => c.label + " " + (counts[c.key] || 0)).join(" · ")));
+      changed.forEach((t) => box.appendChild(el("div", "note", t)));
+    }
+    if (a.label) box.appendChild(el("div", "line", "You chose: " + a.label));
+    if (!a.label && !a.items) box.appendChild(el("div", "line", "Your answer"));
+    if (a.note) box.appendChild(el("div", "note", a.note));
+    sec.appendChild(box);
+    const row = el("div", "rrow");
+    const change = el("button", "save secondary", "Change decision"); change.type = "button"; change.disabled = !db || !canWrite;
+    const st = el("span", "status", "Claude removes this card once it has acted on your decision.");
+    change.addEventListener("click", async () => {
+      change.disabled = true;
+      drafts[id] = { choice: a.choice || null, note: a.note || "", items: a.items || {} }; saveDrafts(drafts);
+      try { await db.doc("questions/" + id).update({ status: "open" }); }
+      catch (e) { st.className = "status err"; st.textContent = "Couldn't reopen it. Try again in a moment."; change.disabled = false; }
+    });
+    row.appendChild(change); row.appendChild(st); sec.appendChild(row);
+    return sec;
+  }
+
+  const rank = (q) => (q.status === "answered" ? 3 : q.priority === "now" ? 0 : q.priority === "security" ? 1 : q.priority === "review" ? 1.5 : 2);
+
+  function renderIndex(order) {
+    const list = $("indexList"); list.textContent = "";
+    order.forEach((id, i) => {
+      const q = cards.get(id).q; const answered = q.status === "answered";
+      const a = el("a"); a.href = "#d-" + id;
+      a.appendChild(el("span", "n", String(i + 1)));
+      a.appendChild(el("span", "t", q.short || q.title || id));
+      const s = el("span", "s"); s.appendChild(el("span", "pill " + (answered ? "done" : "pending"), answered ? "Recorded" : "Pending"));
+      a.appendChild(s); list.appendChild(a);
+    });
+  }
+
+  function render(snap) {
+    const seen = new Set(); const docs = [];
+    snap.docs.forEach((d) => { docs.push({ id: d.id, q: d.data() || {} }); seen.add(d.id); });
+    docs.sort((x, y) => rank(x.q) - rank(y.q) || (x.q.order || 0) - (y.q.order || 0));
+    const main = $("main");
+    docs.forEach(({ id, q }, i) => {
+      const json = JSON.stringify(q) + "#" + (i + 1);
+      const prev = cards.get(id);
+      if (!prev || prev.json !== json) {
+        const node = q.status === "answered" ? answeredCard(id, q, i + 1) : openCard(id, q, i + 1);
+        if (prev) prev.el.replaceWith(node);
+        cards.set(id, { json, el: node, q });
+      }
+    });
+    for (const [id, c] of cards) if (!seen.has(id)) { c.el.remove(); cards.delete(id); }
+    const want = docs.map((d) => cards.get(d.id).el);
+    const have = Array.from(main.querySelectorAll(":scope > section.decision"));
+    if (!(want.length === have.length && want.every((e, i) => e === have[i]))) want.forEach((e) => main.appendChild(e));
+    const open = docs.filter((d) => d.q.status !== "answered");
+    const blocking = open.filter((d) => d.q.priority === "now").length;
+    $("empty").hidden = docs.length > 0;
+    $("empty").textContent = "No decisions waiting. When Claude needs one from you, it appears here with its context and options.";
+    $("meta").textContent = (DOCKET.project ? DOCKET.project + " · " : "") + open.length + " pending" + (blocking ? " · " + blocking + " blocking work" : "") + " · " + (docs.length - open.length) + " recorded, waiting for Claude";
+    renderIndex(docs.map((d) => d.id));
+  }
+
+  function banner(t) { const b = $("banner"); b.textContent = t; b.hidden = false; }
+
+  function applyConfig() {
+    document.title = DOCKET.title; $("docketTitle").textContent = DOCKET.title;
+    $("footer").textContent = DOCKET.footer;
+  }
+
+  async function start() {
+    applyConfig();
+    if (!window.claude || !window.claude.use) { $("empty").textContent = "Open this page on claude.ai to see the docket."; return; }
+    db = await window.claude.use("db");
+    if (!db) { $("empty").textContent = "The docket can't load in this view."; banner("Open this page on claude.ai while signed in to see and record decisions."); return; }
+    // can("data.write") follows the db rules the page was published with; null means "not told", so keep the
+    // controls and let a refused write decide.
+    try {
+      userNs = await window.claude.use("user");
+      if (userNs && typeof userNs.can === "function") { const can = await userNs.can("data.write"); if (can === false) canWrite = false; }
+    } catch (e) {}
+    const sub = () => db.collection("questions").onSnapshot(render, (e) => {
+      if (e && e.code === "unavailable") { setTimeout(sub, 2000); return; }
+      banner("The docket stopped updating. Reload the page to see the latest.");
+    });
+    sub();
+  }
+  start();
+})();
+</script>

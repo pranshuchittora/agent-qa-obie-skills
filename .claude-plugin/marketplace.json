@@ -157,6 +157,27 @@
       },
       "homepage": "https://github.com/obie/skills",
       "license": "MIT"
+    },
+    {
+      "name": "decision-docket",
+      "source": "./skills/decision-docket",
+      "description": "Keep one standing page of every decision you need from the user, each answerable cold with its context, options, costs and gains, your recommendation and what happens if they do nothing; they record answers on the page, you act on them, log the ruling and remove the card",
+      "category": "productivity",
+      "keywords": [
+        "decisions",
+        "questions",
+        "artifacts",
+        "async",
+        "autonomous-agents",
+        "human-in-the-loop",
+        "docket"
+      ],
+      "version": "1.0.0",
+      "author": {
+        "name": "Obie Fernandez"
+      },
+      "homepage": "https://github.com/obie/skills",
+      "license": "MIT"
     }
   ]
 }
